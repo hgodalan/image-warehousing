@@ -13,6 +13,7 @@ import (
 type Client struct {
 	apiKey string
 	client *genai.Client
+	model  string
 }
 
 // Analysis2DResponse represents the JSON response for 2D image analysis
@@ -46,16 +47,22 @@ type Analysis3DResponse struct {
 	Complexity             string   `json:"complexity"`
 }
 
-func NewClient(apiKey string) (*Client, error) {
+func NewClient(apiKey, model string) (*Client, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
+	// Default to gemini-3-flash if no model specified
+	if model == "" {
+		model = "gemini-3-flash"
+	}
+
 	return &Client{
 		apiKey: apiKey,
 		client: client,
+		model:  model,
 	}, nil
 }
 
@@ -89,7 +96,7 @@ Return as JSON with this structure:
 
 IMPORTANT: Return ONLY valid JSON, no other text.`
 
-	model := c.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := c.client.GenerativeModel(c.model)
 	model.SetTemperature(0.4)
 
 	resp, err := model.GenerateContent(ctx,
@@ -168,7 +175,7 @@ Return as JSON with this structure:
 
 IMPORTANT: Return ONLY valid JSON, no other text.`
 
-	model := c.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := c.client.GenerativeModel(c.model)
 	model.SetTemperature(0.4)
 
 	// Build parts array: prompt first, then all images
@@ -220,7 +227,7 @@ Consider:
 
 IMPORTANT: Return ONLY valid JSON array, no other text.`, indexContent, query)
 
-	model := c.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := c.client.GenerativeModel("gemini-3-flash")
 	model.SetTemperature(0.2)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))

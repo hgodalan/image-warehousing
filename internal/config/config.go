@@ -12,6 +12,7 @@ import (
 type Config struct {
 	ServerPort     string
 	GeminiAPIKey   string
+	GeminiModel    string
 	DataDir        string
 	MaxUploadSize  int64
 	AllowedOrigins []string
@@ -24,6 +25,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		ServerPort:    getEnv("SERVER_PORT", "8080"),
 		GeminiAPIKey:  getEnv("GEMINI_API_KEY", ""),
+		GeminiModel:   getEnv("GEMINI_MODEL", "gemini-3-flash"),
 		DataDir:       getEnv("DATA_DIR", "./data"),
 		MaxUploadSize: getEnvAsInt64("MAX_UPLOAD_SIZE", 52428800), // 50MB default
 	}

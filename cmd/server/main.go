@@ -50,12 +50,12 @@ func main() {
 	logger.Info("Index service initialized")
 
 	// AI service
-	aiService, err := service.NewAIService(cfg.GeminiAPIKey)
+	aiService, err := service.NewAIService(cfg.GeminiAPIKey, cfg.GeminiModel)
 	if err != nil {
 		logger.Fatalf("Failed to initialize AI service: %v", err)
 	}
 	defer aiService.Close()
-	logger.Info("AI service initialized (Gemini 2.0 Flash)")
+	logger.Infof("AI service initialized (model: %s)", cfg.GeminiModel)
 
 	// Image service (with workers)
 	imageService := service.NewImageService(storageService, aiService, indexService, logger)

@@ -95,11 +95,23 @@ data/index.md  # Searchable markdown index
 
 ## Configuration (.env)
 
-```
+```bash
+# Server Configuration
 SERVER_PORT=8080
+
+# Gemini AI Configuration
 GEMINI_API_KEY=your_api_key_here
+# Available models:
+#   - gemini-3-flash (default): Fast, cost-effective, excellent vision
+#   - gemini-3-pro: Best-in-class vision analysis, higher accuracy & cost
+GEMINI_MODEL=gemini-3-flash
+
+# Storage Configuration
 DATA_DIR=./data
-MAX_UPLOAD_SIZE=52428800
+MAX_UPLOAD_SIZE=52428800  # 50MB
+
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 ## Commands
@@ -111,6 +123,35 @@ make test       # Run tests
 make dev-setup  # Complete setup
 ```
 
+## Testing
+
+### Run All Tests
+```bash
+make test
+```
+
+### Test Coverage
+- **40 tests** covering services, handlers, and integration workflows
+- **Storage Service**: File operations, thumbnails, image dimensions
+- **Index Service**: Markdown generation, file locking, persistence
+- **Search Service**: Result limiting, validation, query handling
+- **Integration Tests**: End-to-end indexing and search workflows
+
+### Integration Tests
+The integration tests demonstrate the complete workflow:
+- **Indexing Workflow**: Upload → Analyze → Index → Persist
+- **Search Integration**: Populate index → Search by tags/description
+- **Persistence**: Index survives service restarts
+
+```bash
+# Run specific test suites
+go test -v ./internal/service -run TestIndexing     # Indexing tests
+go test -v ./internal/service -run Integration     # Integration tests
+go test -v ./internal/api/handlers                  # Handler tests
+```
+
 ## Documentation
 
-See `plan.md` for complete implementation details.
+- `plan.md` - Future pipeline plan (2D→3D generation with Gemini Pro + Tripo)
+- `README.md` - This file
+- `.env.example` - Configuration template

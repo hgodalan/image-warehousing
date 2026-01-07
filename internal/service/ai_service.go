@@ -15,8 +15,8 @@ type AIService struct {
 	geminiClient *gemini.Client
 }
 
-func NewAIService(apiKey string) (*AIService, error) {
-	client, err := gemini.NewClient(apiKey)
+func NewAIService(apiKey, model string) (*AIService, error) {
+	client, err := gemini.NewClient(apiKey, model)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
