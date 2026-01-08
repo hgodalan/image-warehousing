@@ -25,7 +25,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		ServerPort:    getEnv("SERVER_PORT", "8080"),
 		GeminiAPIKey:  getEnv("GEMINI_API_KEY", ""),
-		GeminiModel:   getEnv("GEMINI_MODEL", "gemini-3-flash"),
+		GeminiModel:   getEnv("GEMINI_MODEL", "gemini-3-flash-preview"),
 		DataDir:       getEnv("DATA_DIR", "./data"),
 		MaxUploadSize: getEnvAsInt64("MAX_UPLOAD_SIZE", 52428800), // 50MB default
 	}

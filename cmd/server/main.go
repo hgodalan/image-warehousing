@@ -66,7 +66,7 @@ func main() {
 	logger.Info("Search service initialized")
 
 	// Create router
-	router := api.NewRouter(cfg, storageService, imageService, searchService, logger)
+	router := api.NewRouter(cfg, storageService, imageService, indexService, searchService, logger)
 
 	// Create HTTP server
 	srv := &http.Server{

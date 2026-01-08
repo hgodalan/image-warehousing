@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Warehouse - Demo UI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Image Warehouse</h1>
+            <p>AI-Powered Image Management System</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="upload">📤 Upload</button>
+            <button class="tab-btn" data-tab="warehouse">🏛️ Warehouse</button>
+            <button class="tab-btn" data-tab="search">🔍 Search</button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <div class="tab-content">
+            <!-- Upload Tab -->
+            <div id="upload" class="tab-pane active">
+                <h2>Upload Images</h2>
+
+                <div class="upload-zone" id="dropZone">
+                    <div class="upload-icon">📁</div>
+                    <p>Drag & drop images or folders here</p>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                    <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                        <button class="btn" id="chooseFilesBtn">
+                            📄 Choose Files
+                        </button>
+                        <button class="btn" id="chooseFolderBtn">
+                            📁 Choose Folder
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label>Title (optional):</label>
+                        <input type="text" id="uploadTitle" placeholder="Beach Sunset">
+                    </div>
+                    <div class="form-group">
+                        <label>Artist (optional):</label>
+                        <input type="text" id="uploadArtist" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma-separated):</label>
+                        <input type="text" id="uploadTags" placeholder="beach, sunset, ocean">
+                    </div>
+                </div>
+
+                <div id="uploadQueue"></div>
+
+                <div id="uploadStatus" class="status-messages"></div>
+            </div>
+
+            <!-- Warehouse Tab -->
+            <div id="warehouse" class="tab-pane">
+                <div class="warehouse-header">
+                    <h2>Image Warehouse</h2>
+                    <div class="warehouse-controls">
+                        <select id="categoryFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <span id="imageCount" class="count-badge">0 images</span>
+                        <button class="btn btn-small" onclick="loadWarehouse()">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <div id="warehouseGrid" class="image-grid">
+                    <div class="loading">Loading images...</div>
+                </div>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="search" class="tab-pane">
+                <h2>Search Images</h2>
+
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="e.g., anthropomorphic rabbit art, surreal performance, character design...">
+                    <button class="btn" onclick="performSearch()">🔍 Search</button>
+                </div>
+
+                <div class="search-examples">
+                    <p><strong>Try these:</strong></p>
+                    <button class="example-btn" onclick="searchExample('anthropomorphic bird')">anthropomorphic bird</button>
+                    <button class="example-btn" onclick="searchExample('surreal masked figures')">surreal masked figures</button>
+                    <button class="example-btn" onclick="searchExample('character design sketch')">character design sketch</button>
+                    <button class="example-btn" onclick="searchExample('whimsical figurines')">whimsical figurines</button>
+                </div>
+
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

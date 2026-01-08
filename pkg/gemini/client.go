@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
-	"google.golang.org/api/option"
 	"github.com/google/generative-ai-go/genai"
+	"google.golang.org/api/option"
 )
 
 type Client struct {
@@ -32,19 +34,19 @@ type Analysis2DResponse struct {
 
 // Analysis3DResponse represents the JSON response for 3D object analysis
 type Analysis3DResponse struct {
-	Type                   string   `json:"type"`
-	PrimaryCategory        string   `json:"primary_category"`
-	SubCategory            string   `json:"sub_category"`
-	Description            string   `json:"description"`
-	Objects                []string `json:"objects"`
-	Colors                 []string `json:"colors"`
-	Style                  string   `json:"style"`
-	Mood                   string   `json:"mood"`
-	Lighting               string   `json:"lighting"`
-	ThreeDCharacteristics  string   `json:"three_d_characteristics"`
-	Features               []string `json:"features"`
-	Symmetry               string   `json:"symmetry"`
-	Complexity             string   `json:"complexity"`
+	Type                  string   `json:"type"`
+	PrimaryCategory       string   `json:"primary_category"`
+	SubCategory           string   `json:"sub_category"`
+	Description           string   `json:"description"`
+	Objects               []string `json:"objects"`
+	Colors                []string `json:"colors"`
+	Style                 string   `json:"style"`
+	Mood                  string   `json:"mood"`
+	Lighting              string   `json:"lighting"`
+	ThreeDCharacteristics string   `json:"three_d_characteristics"`
+	Features              []string `json:"features"`
+	Symmetry              string   `json:"symmetry"`
+	Complexity            string   `json:"complexity"`
 }
 
 func NewClient(apiKey, model string) (*Client, error) {
@@ -54,9 +56,9 @@ func NewClient(apiKey, model string) (*Client, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	// Default to gemini-3-flash if no model specified
+	// Default to gemini-3-flash-preview if no model specified
 	if model == "" {
-		model = "gemini-3-flash"
+		model = "gemini-3-flash-preview"
 	}
 
 	return &Client{
@@ -70,6 +72,44 @@ func (c *Client) Close() error {
 	return c.client.Close()
 }
 
+// detectImageFormat detects the image format from file extension
+// Returns format string compatible with genai.ImageData (e.g., "jpeg", "png", "gif", "webp")
+func detectImageFormat(imagePath string) string {
+	ext := strings.ToLower(filepath.Ext(imagePath))
+	switch ext {
+	case ".jpg", ".jpeg":
+		return "jpeg"
+	case ".png":
+		return "png"
+	case ".gif":
+		return "gif"
+	case ".webp":
+		return "webp"
+	default:
+		return "jpeg" // fallback to jpeg
+	}
+}
+
+// cleanMarkdownJSON removes markdown code fences from JSON responses
+// Gemini sometimes wraps JSON in ```json ... ``` blocks
+func cleanMarkdownJSON(text string) string {
+	text = strings.TrimSpace(text)
+
+	// Remove ```json and ``` markers
+	if strings.HasPrefix(text, "```json") {
+		text = strings.TrimPrefix(text, "```json")
+		text = strings.TrimPrefix(text, "```")
+	}
+	if strings.HasPrefix(text, "```") {
+		text = strings.TrimPrefix(text, "```")
+	}
+	if strings.HasSuffix(text, "```") {
+		text = strings.TrimSuffix(text, "```")
+	}
+
+	return strings.TrimSpace(text)
+}
+
 // AnalyzeImage2D analyzes a single 2D image
 func (c *Client) AnalyzeImage2D(ctx context.Context, imagePath string) (*Analysis2DResponse, error) {
 	// Read image file
@@ -78,19 +118,22 @@ func (c *Client) AnalyzeImage2D(ctx context.Context, imagePath string) (*Analysi
 		return nil, fmt.Errorf("failed to read image: %w", err)
 	}
 
+	// Detect image format from file extension
+	format := detectImageFormat(imagePath)
+
 	prompt := `Analyze this 2D image and provide categorization + detailed analysis.
 
 Return as JSON with this structure:
 {
   "type": "2D",
-  "primary_category": "animals|landscapes|portraits|3d-renders|abstract|architecture|uncategorized",
-  "sub_category": "specific subcategory (e.g., cats, mountains, headshot)",
+  "primary_category": "artwork|conceptual-art|surrealism|figurines|character-design|sculpture|performance-art|animals|landscapes|portraits|3d-renders|abstract|architecture|products|uncategorized",
+  "sub_category": "specific subcategory (e.g., masked-figures, anthropomorphic, ceramics, cats, mountains, headshot)",
   "description": "2-3 sentence detailed description",
   "objects": ["object1", "object2"],
   "colors": ["color1", "color2"],
   "scene_type": "indoor|outdoor|studio",
-  "mood": "calm|dark|energetic|mysterious|etc",
-  "style": "photorealistic|cartoon|3D|painting",
+  "mood": "calm|dark|energetic|mysterious|whimsical|etc",
+  "style": "photorealistic|cartoon|3D|painting|sketch|sculpture",
   "features": ["at least 10 descriptive tags"]
 }
 
@@ -101,7 +144,7 @@ IMPORTANT: Return ONLY valid JSON, no other text.`
 
 	resp, err := model.GenerateContent(ctx,
 		genai.Text(prompt),
-		genai.ImageData("image/jpeg", imgData),
+		genai.ImageData(format, imgData),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("gemini API error: %w", err)
@@ -113,6 +156,9 @@ IMPORTANT: Return ONLY valid JSON, no other text.`
 
 	// Extract text from response
 	responseText := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
+
+	// Clean markdown code fences if present
+	responseText = cleanMarkdownJSON(responseText)
 
 	// Parse JSON response
 	var analysis Analysis2DResponse
@@ -140,7 +186,9 @@ func (c *Client) AnalyzeImage3D(ctx context.Context, viewPaths map[string]string
 			return nil, fmt.Errorf("failed to read %s view: %w", view, err)
 		}
 
-		imageParts = append(imageParts, genai.ImageData("image/jpeg", imgData))
+		// Detect format from file extension
+		format := detectImageFormat(path)
+		imageParts = append(imageParts, genai.ImageData(format, imgData))
 	}
 
 	prompt := `Analyze this 3D object from 6 different views (front, back, left, right, top, bottom).
@@ -159,13 +207,13 @@ Analyze all 6 views together to understand the complete 3D object.
 Return as JSON with this structure:
 {
   "type": "3D",
-  "primary_category": "3d-renders|products|characters|environments|architecture|vehicles|uncategorized",
-  "sub_category": "specific subcategory (e.g., characters, furniture, weapons)",
+  "primary_category": "sculpture|figurines|character-design|3d-renders|products|characters|environments|architecture|vehicles|artwork|uncategorized",
+  "sub_category": "specific subcategory (e.g., anthropomorphic, ceramics, furniture, weapons)",
   "description": "2-3 sentence detailed description of the 3D object",
   "objects": ["primary objects identified"],
   "colors": ["dominant colors across all views"],
-  "style": "photorealistic-3d|stylized|low-poly|high-poly|cartoon-3d|pbr",
-  "mood": "futuristic|organic|mechanical|fantasy|realistic|etc",
+  "style": "photorealistic-3d|stylized|low-poly|high-poly|cartoon-3d|pbr|ceramic|sculpted",
+  "mood": "futuristic|organic|mechanical|fantasy|realistic|whimsical|surreal|etc",
   "lighting": "studio|natural|dramatic|neutral",
   "three_d_characteristics": "describe topology, modeling style, material type",
   "features": ["at least 10 descriptive tags"],
@@ -193,6 +241,9 @@ IMPORTANT: Return ONLY valid JSON, no other text.`
 
 	// Extract text from response
 	responseText := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
+
+	// Clean markdown code fences if present
+	responseText = cleanMarkdownJSON(responseText)
 
 	// Parse JSON response
 	var analysis Analysis3DResponse
@@ -227,7 +278,7 @@ Consider:
 
 IMPORTANT: Return ONLY valid JSON array, no other text.`, indexContent, query)
 
-	model := c.client.GenerativeModel("gemini-3-flash")
+	model := c.client.GenerativeModel(c.model)
 	model.SetTemperature(0.2)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
@@ -240,5 +291,9 @@ IMPORTANT: Return ONLY valid JSON array, no other text.`, indexContent, query)
 	}
 
 	responseText := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
+
+	// Clean markdown code fences if present
+	responseText = cleanMarkdownJSON(responseText)
+
 	return responseText, nil
 }

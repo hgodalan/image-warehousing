@@ -12,17 +12,19 @@ import (
 )
 
 type Router struct {
-	router         *mux.Router
-	uploadHandler  *handlers.UploadHandler
+	router          *mux.Router
+	uploadHandler   *handlers.UploadHandler
 	upload3DHandler *handlers.Upload3DHandler
-	searchHandler  *handlers.SearchHandler
-	healthHandler  *handlers.HealthHandler
+	searchHandler   *handlers.SearchHandler
+	imagesHandler   *handlers.ImagesHandler
+	healthHandler   *handlers.HealthHandler
 }
 
 func NewRouter(
 	cfg *config.Config,
 	storageService *service.StorageService,
 	imageService   *service.ImageService,
+	indexService   *service.IndexService,
 	searchService  *service.SearchService,
 	logger         *logrus.Logger,
 ) *Router {
@@ -32,11 +34,21 @@ func NewRouter(
 	uploadHandler := handlers.NewUploadHandler(storageService, imageService, cfg.MaxUploadSize)
 	upload3DHandler := handlers.NewUpload3DHandler(storageService, imageService, cfg.MaxUploadSize)
 	searchHandler := handlers.NewSearchHandler(searchService)
+	imagesHandler := handlers.NewImagesHandler(imageService, indexService)
 	healthHandler := handlers.NewHealthHandler()
 
 	// Apply global middleware
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
+
+	// Static file serving (frontend)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend"))))
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./frontend/index.html")
+	}).Methods("GET")
+
+	// Serve data files (images, thumbnails)
+	r.PathPrefix("/data/").Handler(http.StripPrefix("/data/", http.FileServer(http.Dir(cfg.DataDir))))
 
 	// API routes
 	api := r.PathPrefix("/api/v1").Subrouter()
@@ -44,6 +56,10 @@ func NewRouter(
 	// Upload endpoints
 	api.HandleFunc("/images/upload", uploadHandler.Handle2DUpload).Methods("POST")
 	api.HandleFunc("/images/upload-3d", upload3DHandler.Handle3DUpload).Methods("POST")
+
+	// Image listing endpoints
+	api.HandleFunc("/images", imagesHandler.HandleListImages).Methods("GET")
+	api.HandleFunc("/images/{id}", imagesHandler.HandleGetImage).Methods("GET")
 
 	// Search endpoint
 	api.HandleFunc("/search", searchHandler.HandleSearch).Methods("POST")
@@ -57,6 +73,7 @@ func NewRouter(
 		uploadHandler:   uploadHandler,
 		upload3DHandler: upload3DHandler,
 		searchHandler:   searchHandler,
+		imagesHandler:   imagesHandler,
 		healthHandler:   healthHandler,
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -152,4 +153,97 @@ func (s *IndexService) writeAIAnalysis(sb *strings.Builder, ai *models.AIAnalysi
 	if ai.ThreeDCharacteristics != "" {
 		sb.WriteString(fmt.Sprintf("- **3D Characteristics:** %s\n", ai.ThreeDCharacteristics))
 	}
+}
+
+// ImageMetadata represents simplified image metadata for listing
+type ImageMetadata struct {
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	Artist        string   `json:"artist"`
+	Category      string   `json:"category"`
+	ThumbnailPath string   `json:"thumbnail_path,omitempty"`
+	FilePath      string   `json:"file_path,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	UploadedAt    string   `json:"uploaded_at"`
+}
+
+// GetAllImages parses the index and returns all images
+func (s *IndexService) GetAllImages() ([]*ImageMetadata, error) {
+	content, err := s.ReadIndex()
+	if err != nil {
+		return nil, err
+	}
+
+	var images []*ImageMetadata
+
+	// Split by image entries
+	imageRegex := regexp.MustCompile(`(?m)^## Image: (.+)$`)
+	matches := imageRegex.FindAllStringSubmatchIndex(content, -1)
+
+	for i, match := range matches {
+		start := match[0]
+		var end int
+		if i < len(matches)-1 {
+			end = matches[i+1][0]
+		} else {
+			end = len(content)
+		}
+
+		section := content[start:end]
+		imageID := content[match[2]:match[3]]
+
+		img := &ImageMetadata{
+			ID: imageID,
+		}
+
+		// Parse fields
+		img.Title = extractField(section, "Title")
+		img.Artist = extractField(section, "Artist")
+		img.Category = extractField(section, "Category")
+		img.ThumbnailPath = normalizePath(extractField(section, "Thumbnail"))
+		img.FilePath = normalizePath(extractField(section, "File Path"))
+		img.Description = extractField(section, "Description")
+		img.UploadedAt = extractField(section, "Uploaded")
+
+		// Extract tags
+		if tagsStr := extractField(section, "Manual Tags"); tagsStr != "" {
+			img.Tags = strings.Split(tagsStr, ", ")
+		}
+
+		images = append(images, img)
+	}
+
+	return images, nil
+}
+
+// GetImageByID finds a specific image in the index
+func (s *IndexService) GetImageByID(imageID string) (*ImageMetadata, error) {
+	images, err := s.GetAllImages()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, img := range images {
+		if img.ID == imageID {
+			return img, nil
+		}
+	}
+
+	return nil, fmt.Errorf("image not found: %s", imageID)
+}
+
+// extractField extracts a field value from markdown content
+func extractField(content, fieldName string) string {
+	pattern := fmt.Sprintf(`\*\*%s:\*\*\s*(.+)`, regexp.QuoteMeta(fieldName))
+	re := regexp.MustCompile(pattern)
+	if matches := re.FindStringSubmatch(content); len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+	return ""
+}
+
+// normalizePath converts Windows backslashes to forward slashes for web URLs
+func normalizePath(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }
