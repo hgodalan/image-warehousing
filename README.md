@@ -5,11 +5,17 @@ AI-powered image warehousing system for artists with automatic categorization an
 ## Features
 
 ✅ **2D Image Support**: Upload photos, paintings, concept art
+
 ✅ **3D Object Support**: Upload 3D models with 6-view analysis (front, back, left, right, top, bottom)
+
 ✅ **AI-Powered Categorization**: Gemini automatically analyzes and categorizes uploads
+
 ✅ **Semantic Search**: Natural language queries ("dark cat image" finds both "black cat" and "cat at night")
+
 ✅ **Filesystem-Based**: No database needed - organized folders + markdown index
+
 ✅ **Async Processing**: Fast upload response with background AI analysis
+
 ✅ **RESTful API**: HTTP endpoints for all operations
 
 ## Quick Start
