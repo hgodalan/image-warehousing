@@ -401,8 +401,8 @@ async function showImageModal(imageId) {
 
 function closeModal() {
     // Clean up Three.js viewer if it exists
-    if (threeJsViewer) {
-        threeJsViewer.renderer.dispose();
+    if (threeJsViewer && threeJsViewer.dispose) {
+        threeJsViewer.dispose();
         threeJsViewer = null;
     }
     document.getElementById('imageModal').classList.remove('show');
@@ -463,9 +463,17 @@ function displaySearchResults(data, query) {
         ${data.results.map(result => {
             // Find image metadata
             const img = allImages.find(i => i.id === result.image_id) || {};
+
+            // Get thumbnail path - for 3D objects, use front view
+            let thumbnailPath = img.thumbnail_path || img.file_path;
+            if (img.type === '3D' && img.views && img.views.front) {
+                thumbnailPath = img.views.front;
+            }
+
             return `
                 <div class="search-result" onclick="showImageModal('${result.image_id}')">
-                    <img src="/data/${img.thumbnail_path || img.file_path || 'placeholder.jpg'}" alt="${img.title || 'Image'}"
+                    ${img.type === '3D' ? '<div class="badge-3d" style="top: 5px; right: 5px;">3D</div>' : ''}
+                    <img src="/data/${thumbnailPath || 'placeholder.jpg'}" alt="${img.title || 'Image'}"
                          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect fill=%22%23ddd%22 width=%22150%22 height=%22150%22/></svg>'">
                     <div class="search-result-body">
                         <div class="search-result-score">Score: ${(result.relevance_score * 100).toFixed(0)}%</div>
@@ -678,8 +686,8 @@ let threeJsViewer = null;
 
 window.initThreeJsViewer = function(containerId, modelUrl, fileExtension) {
     // Clean up previous viewer if exists
-    if (threeJsViewer) {
-        threeJsViewer.renderer.dispose();
+    if (threeJsViewer && threeJsViewer.dispose) {
+        threeJsViewer.dispose();
         threeJsViewer = null;
     }
 
@@ -819,24 +827,50 @@ window.initThreeJsViewer = function(containerId, modelUrl, fileExtension) {
 
     loadModel();
 
-    // Animation loop
+    // Animation loop with stop capability
+    let animationId = null;
     function animate() {
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
         controls.update();
         renderer.render(scene, camera);
     }
     animate();
 
     // Handle window resize
-    window.addEventListener('resize', () => {
+    const resizeHandler = () => {
         if (container.clientWidth > 0) {
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
-    });
+    };
+    window.addEventListener('resize', resizeHandler);
 
-    threeJsViewer = { scene, camera, renderer, controls };
+    // Store viewer with cleanup function
+    threeJsViewer = {
+        scene,
+        camera,
+        renderer,
+        controls,
+        animationId,
+        resizeHandler,
+        dispose: () => {
+            // Stop animation loop
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            // Remove resize listener
+            window.removeEventListener('resize', resizeHandler);
+            // Dispose Three.js objects
+            renderer.dispose();
+            controls.dispose();
+            // Clear container
+            if (container) {
+                container.innerHTML = '';
+            }
+        }
+    };
 }
 
 // Expose functions to global window for inline event handlers
