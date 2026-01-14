@@ -30,8 +30,25 @@ func (h *Upload3DHandler) Handle3DUpload(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Get all 6 view files
-	views := []string{"front", "back", "left", "right", "top", "bottom"}
+	// Get the 3D model file (required)
+	modelFile, modelHeader, err := r.FormFile("model")
+	if err != nil {
+		http.Error(w, "Missing 3D model file", http.StatusBadRequest)
+		return
+	}
+	defer modelFile.Close()
+
+	// Check if 4-surface or 6-surface mode
+	mode := r.FormValue("mode") // "4" or "6"
+	var views []string
+
+	if mode == "4" {
+		views = []string{"front", "back", "left", "right"}
+	} else {
+		// Default to 6-surface mode
+		views = []string{"front", "back", "left", "right", "top", "bottom"}
+	}
+
 	viewFiles := make(map[string]multipart.File)
 	viewFilenames := make(map[string]string)
 
@@ -72,8 +89,8 @@ func (h *Upload3DHandler) Handle3DUpload(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Save to temp
-	imageID, tempPaths, err := h.storageService.Save3DObjectToTemp(viewFiles, viewFilenames)
+	// Save to temp (including model file)
+	imageID, tempPaths, modelPath, err := h.storageService.Save3DObjectToTemp(modelFile, modelHeader.Filename, viewFiles, viewFilenames)
 	if err != nil {
 		http.Error(w, "Failed to save 3D object: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -81,12 +98,14 @@ func (h *Upload3DHandler) Handle3DUpload(w http.ResponseWriter, r *http.Request)
 
 	// Queue job for processing
 	job := &models.UploadJob{
-		ImageID:    imageID,
-		Type:       models.ImageType3D,
-		FilePaths:  tempPaths,
-		Title:      title,
-		Artist:     artist,
-		ManualTags: tags,
+		ImageID:        imageID,
+		Type:           models.ImageType3D,
+		FilePaths:      tempPaths,
+		ModelFilePath:  modelPath,
+		ModelFilename:  modelHeader.Filename,
+		Title:          title,
+		Artist:         artist,
+		ManualTags:     tags,
 	}
 
 	if err := h.imageService.QueueJob(job); err != nil {
@@ -95,10 +114,18 @@ func (h *Upload3DHandler) Handle3DUpload(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Return response
+	viewCount := len(views)
+	var viewsText string
+	if viewCount == 4 {
+		viewsText = "4 views"
+	} else {
+		viewsText = "6 views"
+	}
 	response := map[string]interface{}{
 		"id":      imageID,
 		"status":  "processing",
-		"message": "3D object uploaded successfully (6 views) and is being processed",
+		"message": "3D object uploaded successfully (" + viewsText + ") and is being processed",
+		"views":   viewCount,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

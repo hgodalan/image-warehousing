@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
@@ -68,46 +69,52 @@ func (s *StorageService) SaveImageToTemp(file multipart.File, filename string) (
 	return imageID, tempPath, nil
 }
 
-// Save3DObjectToTemp saves 6 views of a 3D object to a temp folder
-func (s *StorageService) Save3DObjectToTemp(views map[string]multipart.File, filenames map[string]string) (string, map[string]string, error) {
+// Save3DObjectToTemp saves a 3D model file and its surface views to a temp folder
+func (s *StorageService) Save3DObjectToTemp(modelFile multipart.File, modelFilename string, views map[string]multipart.File, filenames map[string]string) (string, map[string]string, string, error) {
 	imageID := uuid.New().String()
 	objectDir := filepath.Join(s.tempDir, imageID)
 
 	// Create object directory
 	if err := os.MkdirAll(objectDir, 0755); err != nil {
-		return "", nil, fmt.Errorf("failed to create object directory: %w", err)
+		return "", nil, "", fmt.Errorf("failed to create object directory: %w", err)
 	}
 
-	paths := make(map[string]string)
-	requiredViews := []string{"front", "back", "left", "right", "top", "bottom"}
+	// Save the 3D model file
+	modelExt := filepath.Ext(modelFilename)
+	modelPath := filepath.Join(objectDir, "model"+modelExt)
 
-	// Validate all views are present
-	for _, view := range requiredViews {
-		if _, ok := views[view]; !ok {
-			return "", nil, fmt.Errorf("missing required view: %s", view)
-		}
+	outModelFile, err := os.Create(modelPath)
+	if err != nil {
+		return "", nil, "", fmt.Errorf("failed to create model file: %w", err)
 	}
+
+	if _, err := io.Copy(outModelFile, modelFile); err != nil {
+		outModelFile.Close()
+		return "", nil, "", fmt.Errorf("failed to save model file: %w", err)
+	}
+	outModelFile.Close()
 
 	// Save each view
+	paths := make(map[string]string)
 	for view, file := range views {
 		ext := filepath.Ext(filenames[view])
 		viewPath := filepath.Join(objectDir, view+ext)
 
 		outFile, err := os.Create(viewPath)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to create file for view %s: %w", view, err)
+			return "", nil, "", fmt.Errorf("failed to create file for view %s: %w", view, err)
 		}
 
 		if _, err := io.Copy(outFile, file); err != nil {
 			outFile.Close()
-			return "", nil, fmt.Errorf("failed to save view %s: %w", view, err)
+			return "", nil, "", fmt.Errorf("failed to save view %s: %w", view, err)
 		}
 		outFile.Close()
 
 		paths[view] = viewPath
 	}
 
-	return imageID, paths, nil
+	return imageID, paths, modelPath, nil
 }
 
 // GenerateThumbnail creates a 300x300 thumbnail for a 2D image
@@ -176,43 +183,59 @@ func (s *StorageService) MoveToCategory(imageID, tempPath, category string) (str
 	return relPath, relThumbPath, nil
 }
 
-// Move3DToCategory moves a 3D object folder from temp to its category folder
-func (s *StorageService) Move3DToCategory(imageID, tempDir, category string) (string, map[string]string, error) {
+// Move3DToCategory moves a 3D object folder (including model file and views) from temp to its category folder
+func (s *StorageService) Move3DToCategory(imageID, tempDir, category string) (string, string, map[string]string, error) {
 	categoryDir := filepath.Join(s.dataDir, "categories", category)
 	if err := os.MkdirAll(categoryDir, 0755); err != nil {
-		return "", nil, fmt.Errorf("failed to create category directory: %w", err)
+		return "", "", nil, fmt.Errorf("failed to create category directory: %w", err)
 	}
 
 	newObjectDir := filepath.Join(categoryDir, imageID)
 
 	// Move the entire object directory
 	if err := os.Rename(filepath.Join(s.tempDir, imageID), newObjectDir); err != nil {
-		return "", nil, fmt.Errorf("failed to move object directory: %w", err)
+		return "", "", nil, fmt.Errorf("failed to move object directory: %w", err)
 	}
 
-	// Build relative paths for all views
+	// Find the model file and build relative paths for all views
+	var modelPath string
 	views := make(map[string]string)
-	requiredViews := []string{"front", "back", "left", "right", "top", "bottom"}
 
-	for _, view := range requiredViews {
-		// Find the file with this view name (regardless of extension)
-		entries, err := os.ReadDir(newObjectDir)
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to read object directory: %w", err)
+	entries, err := os.ReadDir(newObjectDir)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("failed to read object directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
 		}
 
-		for _, entry := range entries {
-			if !entry.IsDir() && filepath.Base(entry.Name())[:len(view)] == view {
-				fullPath := filepath.Join(newObjectDir, entry.Name())
+		filename := entry.Name()
+
+		// Check if it's the model file (starts with "model")
+		if strings.HasPrefix(filename, "model") {
+			fullPath := filepath.Join(newObjectDir, filename)
+			relPath, _ := filepath.Rel(s.dataDir, fullPath)
+			modelPath = relPath
+			continue
+		}
+
+		// Check if it's a view file (exclude thumbnails)
+		for _, view := range []string{"front", "back", "left", "right", "top", "bottom"} {
+			// Match exact view name (e.g., "front.png" but not "front_thumb.jpg")
+			if strings.HasPrefix(filename, view) && !strings.Contains(filename, "_thumb") {
+				fullPath := filepath.Join(newObjectDir, filename)
 				relPath, _ := filepath.Rel(s.dataDir, fullPath)
 				views[view] = relPath
+				break
 			}
 		}
 	}
 
 	relFolderPath, _ := filepath.Rel(s.dataDir, newObjectDir)
 
-	return relFolderPath, views, nil
+	return relFolderPath, modelPath, views, nil
 }
 
 // GetImageDimensions returns the width and height of an image

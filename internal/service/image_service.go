@@ -178,14 +178,14 @@ func (s *ImageService) process2DJob(job *models.UploadJob) error {
 func (s *ImageService) process3DJob(job *models.UploadJob) error {
 	ctx := context.Background()
 
-	// 1. Generate thumbnails for all 6 views
+	// 1. Generate thumbnails for all views (4 or 6)
 	s.logger.Infof("Generating thumbnails for 3D object %s", job.ImageID)
 	_, err := s.storageService.GenerateThumbnails3D(job.FilePaths)
 	if err != nil {
 		return fmt.Errorf("failed to generate thumbnails: %w", err)
 	}
 
-	// 2. Calculate total file size
+	// 2. Calculate total file size (including model file)
 	var totalSize int64
 	for _, path := range job.FilePaths {
 		size, err := s.storageService.GetFileSize(path)
@@ -194,9 +194,18 @@ func (s *ImageService) process3DJob(job *models.UploadJob) error {
 		}
 		totalSize += size
 	}
+	// Add model file size
+	if job.ModelFilePath != "" {
+		modelSize, err := s.storageService.GetFileSize(job.ModelFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to get model file size: %w", err)
+		}
+		totalSize += modelSize
+	}
 
-	// 3. Analyze with AI (all 6 views)
-	s.logger.Infof("Analyzing 3D object %s with Gemini (6 views)", job.ImageID)
+	// 3. Analyze with AI (all surface views together)
+	viewCount := len(job.FilePaths)
+	s.logger.Infof("Analyzing 3D object %s with Gemini (%d views)", job.ImageID, viewCount)
 	analysis, err := s.aiService.Analyze3DObject(ctx, job.FilePaths)
 	if err != nil {
 		return fmt.Errorf("failed to analyze 3D object: %w", err)
@@ -207,7 +216,7 @@ func (s *ImageService) process3DJob(job *models.UploadJob) error {
 	s.logger.Infof("3D object %s categorized as: %s", job.ImageID, categoryPath)
 
 	// 5. Move to category folder
-	folderPath, views, err := s.storageService.Move3DToCategory(job.ImageID, "", categoryPath)
+	folderPath, modelPath, views, err := s.storageService.Move3DToCategory(job.ImageID, "", categoryPath)
 	if err != nil {
 		return fmt.Errorf("failed to move to category: %w", err)
 	}
@@ -223,6 +232,8 @@ func (s *ImageService) process3DJob(job *models.UploadJob) error {
 		ProcessedAt:   &now,
 		Status:        "completed",
 		FolderPath:    folderPath,
+		ModelFilePath: modelPath,
+		ModelFilename: job.ModelFilename,
 		Views:         views,
 		TotalFileSize: totalSize,
 		Category:      categoryPath,

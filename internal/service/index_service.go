@@ -91,11 +91,16 @@ func (s *IndexService) buildMarkdownEntry(img *models.Image) string {
 		sb.WriteString(fmt.Sprintf("**File Size:** %.1f MB\n", float64(img.FileSize)/(1024*1024)))
 	} else if img.Type == models.ImageType3D {
 		sb.WriteString(fmt.Sprintf("**Folder Path:** %s\n", img.FolderPath))
+		if img.ModelFilePath != "" {
+			sb.WriteString(fmt.Sprintf("**Model File:** %s\n", img.ModelFilePath))
+			sb.WriteString(fmt.Sprintf("**Model Filename:** %s\n", img.ModelFilename))
+		}
 		sb.WriteString("**Views:**\n")
 		for view, path := range img.Views {
 			sb.WriteString(fmt.Sprintf("- %s: %s\n", view, path))
 		}
-		sb.WriteString(fmt.Sprintf("**Total File Size:** %.1f MB (6 images)\n", float64(img.TotalFileSize)/(1024*1024)))
+		viewCount := len(img.Views)
+		sb.WriteString(fmt.Sprintf("**Total File Size:** %.1f MB (%d views)\n", float64(img.TotalFileSize)/(1024*1024), viewCount))
 	}
 
 	if len(img.ManualTags) > 0 {
@@ -157,15 +162,22 @@ func (s *IndexService) writeAIAnalysis(sb *strings.Builder, ai *models.AIAnalysi
 
 // ImageMetadata represents simplified image metadata for listing
 type ImageMetadata struct {
-	ID            string   `json:"id"`
-	Title         string   `json:"title"`
-	Artist        string   `json:"artist"`
-	Category      string   `json:"category"`
-	ThumbnailPath string   `json:"thumbnail_path,omitempty"`
-	FilePath      string   `json:"file_path,omitempty"`
-	Description   string   `json:"description,omitempty"`
-	Tags          []string `json:"tags,omitempty"`
-	UploadedAt    string   `json:"uploaded_at"`
+	ID              string            `json:"id"`
+	Title           string            `json:"title"`
+	Artist          string            `json:"artist"`
+	Category        string            `json:"category"`
+	Type            string            `json:"type,omitempty"`
+	// 2D fields
+	ThumbnailPath   string            `json:"thumbnail_path,omitempty"`
+	FilePath        string            `json:"file_path,omitempty"`
+	// 3D fields
+	ModelFilePath   string            `json:"model_file_path,omitempty"`
+	ModelFilename   string            `json:"model_filename,omitempty"`
+	Views           map[string]string `json:"views,omitempty"`
+	// Common fields
+	Description     string            `json:"description,omitempty"`
+	Tags            []string          `json:"tags,omitempty"`
+	UploadedAt      string            `json:"uploaded_at"`
 }
 
 // GetAllImages parses the index and returns all images
@@ -201,14 +213,22 @@ func (s *IndexService) GetAllImages() ([]*ImageMetadata, error) {
 		img.Title = extractField(section, "Title")
 		img.Artist = extractField(section, "Artist")
 		img.Category = extractField(section, "Category")
+		img.Type = extractField(section, "Type")
 		img.ThumbnailPath = normalizePath(extractField(section, "Thumbnail"))
 		img.FilePath = normalizePath(extractField(section, "File Path"))
+		img.ModelFilePath = normalizePath(extractField(section, "Model File"))
+		img.ModelFilename = extractField(section, "Model Filename")
 		img.Description = extractField(section, "Description")
 		img.UploadedAt = extractField(section, "Uploaded")
 
 		// Extract tags
 		if tagsStr := extractField(section, "Manual Tags"); tagsStr != "" {
 			img.Tags = strings.Split(tagsStr, ", ")
+		}
+
+		// Extract views for 3D objects
+		if img.Type == "3D" {
+			img.Views = extractViews(section)
 		}
 
 		images = append(images, img)
@@ -246,4 +266,28 @@ func extractField(content, fieldName string) string {
 // normalizePath converts Windows backslashes to forward slashes for web URLs
 func normalizePath(path string) string {
 	return strings.ReplaceAll(path, "\\", "/")
+}
+
+// extractViews extracts the Views section from 3D object markdown
+func extractViews(content string) map[string]string {
+	views := make(map[string]string)
+
+	// Find the Views section
+	viewsRegex := regexp.MustCompile(`(?s)\*\*Views:\*\*\n((?:- .+\n)+)`)
+	if matches := viewsRegex.FindStringSubmatch(content); len(matches) > 1 {
+		viewsSection := matches[1]
+
+		// Parse each view line (e.g., "- front: categories\...")
+		lineRegex := regexp.MustCompile(`- (\w+): (.+)`)
+		lines := strings.Split(viewsSection, "\n")
+		for _, line := range lines {
+			if lineMatches := lineRegex.FindStringSubmatch(line); len(lineMatches) > 2 {
+				viewName := lineMatches[1]
+				viewPath := normalizePath(strings.TrimSpace(lineMatches[2]))
+				views[viewName] = viewPath
+			}
+		}
+	}
+
+	return views
 }
