@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Warehouse - Demo UI</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="static/style.css">
     <!-- Google Model Viewer for GLB/GLTF preview -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <!-- Three.js with ES modules (fixes ORB error) -->
@@ -17,6 +18,7 @@
     }
     </script>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -76,7 +78,8 @@
             <!-- 3D Upload Tab -->
             <div id="upload3d" class="tab-pane">
                 <h2>Upload 3D Object</h2>
-                <p style="color: #666; margin-bottom: 20px;">Upload multiple surface views of a 3D object. All surfaces will be analyzed together as one entity.</p>
+                <p style="color: #666; margin-bottom: 20px;">Upload multiple surface views of a 3D object. All surfaces
+                    will be analyzed together as one entity.</p>
 
                 <div class="upload-form">
                     <div class="form-group">
@@ -116,7 +119,8 @@
                                 <strong>Click to select 3D model</strong>
                                 <p>Supported: .glb, .gltf, .stl, .obj, .fbx, .blend, .dae</p>
                             </div>
-                            <input type="file" id="modelFileInput" accept=".glb,.gltf,.stl,.obj,.fbx,.blend,.dae" hidden>
+                            <input type="file" id="modelFileInput" accept=".glb,.gltf,.stl,.obj,.fbx,.blend,.dae"
+                                hidden>
                         </div>
                         <div id="modelFileName" class="model-filename"></div>
                     </div>
@@ -156,16 +160,21 @@
                 <h2>Search Images</h2>
 
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="e.g., anthropomorphic rabbit art, surreal performance, character design...">
+                    <input type="text" id="searchInput"
+                        placeholder="e.g., anthropomorphic rabbit art, surreal performance, character design...">
                     <button class="btn" onclick="performSearch()">🔍 Search</button>
                 </div>
 
                 <div class="search-examples">
                     <p><strong>Try these:</strong></p>
-                    <button class="example-btn" onclick="searchExample('anthropomorphic bird')">anthropomorphic bird</button>
-                    <button class="example-btn" onclick="searchExample('surreal masked figures')">surreal masked figures</button>
-                    <button class="example-btn" onclick="searchExample('character design sketch')">character design sketch</button>
-                    <button class="example-btn" onclick="searchExample('whimsical figurines')">whimsical figurines</button>
+                    <button class="example-btn" onclick="searchExample('anthropomorphic bird')">anthropomorphic
+                        bird</button>
+                    <button class="example-btn" onclick="searchExample('surreal masked figures')">surreal masked
+                        figures</button>
+                    <button class="example-btn" onclick="searchExample('character design sketch')">character design
+                        sketch</button>
+                    <button class="example-btn" onclick="searchExample('whimsical figurines')">whimsical
+                        figurines</button>
                 </div>
 
                 <div id="searchResults" class="search-results"></div>
@@ -181,6 +190,7 @@
         </div>
     </div>
 
-    <script type="module" src="/static/app.js"></script>
+    <script type="module" src="static/app.js"></script>
 </body>
+
 </html>

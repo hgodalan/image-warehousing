@@ -16,15 +16,11 @@ jobs:
 
       - name: Prepare frontend for GitHub Pages
         run: |
-          # Create build directory with static subdirectory
           mkdir -p build/static
-
-          # Copy index.html to root
           cp frontend/index.html build/
-
-          # Copy CSS and JS to static folder
           cp frontend/style.css build/static/
           cp frontend/app.js build/static/
+          touch build/.nojekyll
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
