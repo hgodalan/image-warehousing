@@ -14,9 +14,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare frontend for GitHub Pages
+        run: |
+          # Copy frontend to build directory
+          mkdir -p build
+          cp -r frontend/* build/
+
+          # Fix paths: /static/ → ./
+          sed -i 's|/static/|./|g' build/index.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontend
+          publish_dir: ./build
           publish_branch: gh-pages
