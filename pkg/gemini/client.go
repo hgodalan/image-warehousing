@@ -169,42 +169,48 @@ IMPORTANT: Return ONLY valid JSON, no other text.`
 	return &analysis, nil
 }
 
-// AnalyzeImage3D analyzes a 3D object from 6 views
+// AnalyzeImage3D analyzes a 3D object from multiple surface views (4 or 6)
 func (c *Client) AnalyzeImage3D(ctx context.Context, viewPaths map[string]string) (*Analysis3DResponse, error) {
-	// Read all 6 view images
-	views := []string{"front", "back", "left", "right", "top", "bottom"}
+	// Read all surface view images (dynamically handles 4 or 6 views)
+	possibleViews := []string{"front", "back", "left", "right", "top", "bottom"}
+	views := []string{}
 	imageParts := []genai.Part{}
 
-	for _, view := range views {
-		path, ok := viewPaths[view]
-		if !ok {
-			return nil, fmt.Errorf("missing view: %s", view)
-		}
+	// Only include views that are present
+	for _, view := range possibleViews {
+		if path, ok := viewPaths[view]; ok {
+			views = append(views, view)
 
-		imgData, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read %s view: %w", view, err)
-		}
+			imgData, err := os.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read %s view: %w", view, err)
+			}
 
-		// Detect format from file extension
-		format := detectImageFormat(path)
-		imageParts = append(imageParts, genai.ImageData(format, imgData))
+			// Detect format from file extension
+			format := detectImageFormat(path)
+			imageParts = append(imageParts, genai.ImageData(format, imgData))
+		}
 	}
 
-	prompt := `Analyze this 3D object from 6 different views (front, back, left, right, top, bottom).
-These 6 images show the same 3D object from all angles.
+	if len(views) == 0 {
+		return nil, fmt.Errorf("no surface views provided")
+	}
+
+	// Build dynamic prompt based on views present
+	viewsList := ""
+	for i, view := range views {
+		viewsList += fmt.Sprintf("%d. %s view\n", i+1, view)
+	}
+
+	viewsJoined := strings.Join(views, ", ")
+	prompt := fmt.Sprintf(`Analyze this 3D object from %d different views (%s).
+These %d images show the same 3D object from multiple angles.
 
 Images provided:
-1. Front view
-2. Back view
-3. Left view
-4. Right view
-5. Top view
-6. Bottom view
+%s
+Analyze all %d views together to understand the complete 3D object.
 
-Analyze all 6 views together to understand the complete 3D object.
-
-Return as JSON with this structure:
+Return as JSON with this structure:`, len(views), viewsJoined, len(views), viewsList, len(views)) + `
 {
   "type": "3D",
   "primary_category": "sculpture|figurines|character-design|3d-renders|products|characters|environments|architecture|vehicles|artwork|uncategorized",

@@ -30,7 +30,9 @@ type Image struct {
 
 	// For 3D objects
 	FolderPath       string            `json:"folder_path,omitempty"`
-	Views            map[string]string `json:"views,omitempty"` // view name -> file path
+	ModelFilePath    string            `json:"model_file_path,omitempty"`    // Path to the 3D model file (.obj, .glb, .fbx, etc.)
+	ModelFilename    string            `json:"model_filename,omitempty"`     // Original filename of the 3D model
+	Views            map[string]string `json:"views,omitempty"`              // view name -> file path
 	TotalFileSize    int64             `json:"total_file_size,omitempty"`
 
 	// Common fields
@@ -41,11 +43,13 @@ type Image struct {
 
 // UploadJob represents a job for the background worker
 type UploadJob struct {
-	ImageID    string
-	Type       ImageType
-	FilePath   string            // For 2D
-	FilePaths  map[string]string // For 3D (view -> path)
-	Title      string
-	Artist     string
-	ManualTags []string
+	ImageID        string
+	Type           ImageType
+	FilePath       string            // For 2D
+	FilePaths      map[string]string // For 3D (view -> path)
+	ModelFilePath  string            // For 3D (the actual 3D model file)
+	ModelFilename  string            // For 3D (original model filename)
+	Title          string
+	Artist         string
+	ManualTags     []string
 }
