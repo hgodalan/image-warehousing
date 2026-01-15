@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Warehouse - Demo UI</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Google Model Viewer for GLB/GLTF preview -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <!-- Three.js with ES modules (fixes ORB error) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Image Warehouse</h1>
+            <p>AI-Powered Image Management System</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="upload">📤 Upload</button>
+            <button class="tab-btn" data-tab="upload3d">📦 3D Upload</button>
+            <button class="tab-btn" data-tab="warehouse">🏛️ Warehouse</button>
+            <button class="tab-btn" data-tab="search">🔍 Search</button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <div class="tab-content">
+            <!-- Upload Tab -->
+            <div id="upload" class="tab-pane active">
+                <h2>Upload Images</h2>
+
+                <div class="upload-zone" id="dropZone">
+                    <div class="upload-icon">📁</div>
+                    <p>Drag & drop images or folders here</p>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                    <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                        <button class="btn" id="chooseFilesBtn">
+                            📄 Choose Files
+                        </button>
+                        <button class="btn" id="chooseFolderBtn">
+                            📁 Choose Folder
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label>Title (optional):</label>
+                        <input type="text" id="uploadTitle" placeholder="Beach Sunset">
+                    </div>
+                    <div class="form-group">
+                        <label>Artist (optional):</label>
+                        <input type="text" id="uploadArtist" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma-separated):</label>
+                        <input type="text" id="uploadTags" placeholder="beach, sunset, ocean">
+                    </div>
+                </div>
+
+                <div id="uploadQueue"></div>
+
+                <div id="uploadStatus" class="status-messages"></div>
+            </div>
+
+            <!-- 3D Upload Tab -->
+            <div id="upload3d" class="tab-pane">
+                <h2>Upload 3D Object</h2>
+                <p style="color: #666; margin-bottom: 20px;">Upload multiple surface views of a 3D object. All surfaces will be analyzed together as one entity.</p>
+
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label>Mode:</label>
+                        <div style="display: flex; gap: 15px;">
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="surfaceMode" value="4" checked>
+                                <span>4 Surfaces (Front, Back, Left, Right)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="surfaceMode" value="6">
+                                <span>6 Surfaces (+ Top, Bottom)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Title (required):</label>
+                        <input type="text" id="upload3dTitle" placeholder="e.g., Abstract Sculpture" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Artist (required):</label>
+                        <input type="text" id="upload3dArtist" placeholder="e.g., John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tags (comma-separated, optional):</label>
+                        <input type="text" id="upload3dTags" placeholder="sculpture, abstract, bronze">
+                    </div>
+
+                    <div class="form-group">
+                        <label>3D Model File (required):</label>
+                        <div class="model-upload-box" id="modelUploadBox">
+                            <div class="model-upload-icon">📁</div>
+                            <div class="model-upload-text">
+                                <strong>Click to select 3D model</strong>
+                                <p>Supported: .glb, .gltf, .stl, .obj, .fbx, .blend, .dae</p>
+                            </div>
+                            <input type="file" id="modelFileInput" accept=".glb,.gltf,.stl,.obj,.fbx,.blend,.dae" hidden>
+                        </div>
+                        <div id="modelFileName" class="model-filename"></div>
+                    </div>
+                </div>
+
+                <div id="surfaceUploads" class="surface-grid">
+                    <!-- Surface upload slots will be dynamically generated here -->
+                </div>
+
+                <button class="btn" id="upload3dBtn" style="margin-top: 20px; width: 100%;">
+                    📦 Upload 3D Object
+                </button>
+
+                <div id="upload3dStatus" class="status-messages"></div>
+            </div>
+
+            <!-- Warehouse Tab -->
+            <div id="warehouse" class="tab-pane">
+                <div class="warehouse-header">
+                    <h2>Image Warehouse</h2>
+                    <div class="warehouse-controls">
+                        <select id="categoryFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <span id="imageCount" class="count-badge">0 images</span>
+                        <button class="btn btn-small" onclick="loadWarehouse()">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <div id="warehouseGrid" class="image-grid">
+                    <div class="loading">Loading images...</div>
+                </div>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="search" class="tab-pane">
+                <h2>Search Images</h2>
+
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="e.g., anthropomorphic rabbit art, surreal performance, character design...">
+                    <button class="btn" onclick="performSearch()">🔍 Search</button>
+                </div>
+
+                <div class="search-examples">
+                    <p><strong>Try these:</strong></p>
+                    <button class="example-btn" onclick="searchExample('anthropomorphic bird')">anthropomorphic bird</button>
+                    <button class="example-btn" onclick="searchExample('surreal masked figures')">surreal masked figures</button>
+                    <button class="example-btn" onclick="searchExample('character design sketch')">character design sketch</button>
+                    <button class="example-btn" onclick="searchExample('whimsical figurines')">whimsical figurines</button>
+                </div>
+
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script type="module" src="/static/app.js"></script>
+</body>
+</html>
