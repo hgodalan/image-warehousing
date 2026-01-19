@@ -879,6 +879,7 @@ window.performSearch = performSearch;
 window.searchExample = searchExample;
 window.closeModal = closeModal;
 window.showImageModal = showImageModal;
+window.uploadAll = uploadAll;
 
 // Load warehouse on page load
 window.addEventListener('load', () => {
