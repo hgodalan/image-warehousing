@@ -280,7 +280,7 @@ function displayImages(images) {
         return `
             <div class="image-card" onclick="showImageModal('${img.id}')">
                 ${img.type === '3D' ? '<div class="badge-3d">3D</div>' : ''}
-                <img src="/data/${thumbnailPath}" alt="${img.title}"
+                <img src="/data/${thumbnailPath}" alt="${img.title}" loading="lazy"
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22>No Image</text></svg>'">
                 <div class="image-card-body">
                     <div class="image-card-title">${img.title || 'Untitled'}</div>
@@ -313,7 +313,7 @@ async function showImageModal(imageId) {
         if (img.type === '3D' && img.views) {
             const viewsHTML = Object.entries(img.views).map(([viewName, viewPath]) => `
                 <div class="view-item">
-                    <img src="/data/${viewPath}" alt="${viewName} view">
+                    <img src="/data/${viewPath}" alt="${viewName} view" loading="lazy">
                     <div class="view-label">${viewName}</div>
                 </div>
             `).join('');
@@ -381,7 +381,7 @@ async function showImageModal(imageId) {
         } else {
             // 2D image display
             modalBody.innerHTML = `
-                <img src="/data/${img.file_path || img.FilePath}" alt="${img.title || img.Title}">
+                <img src="/data/${img.file_path || img.FilePath}" alt="${img.title || img.Title}" loading="lazy">
                 <h2>${img.title || img.Title || 'Untitled'}</h2>
                 <p><strong>Artist:</strong> ${img.artist || img.Artist || 'Unknown'}</p>
                 <p><strong>Category:</strong> ${img.category || img.Category || 'uncategorized'}</p>
@@ -473,7 +473,7 @@ function displaySearchResults(data, query) {
             return `
                 <div class="search-result" onclick="showImageModal('${result.image_id}')">
                     ${img.type === '3D' ? '<div class="badge-3d" style="top: 5px; right: 5px;">3D</div>' : ''}
-                    <img src="/data/${thumbnailPath || 'placeholder.jpg'}" alt="${img.title || 'Image'}"
+                    <img src="/data/${thumbnailPath || 'placeholder.jpg'}" alt="${img.title || 'Image'}" loading="lazy"
                          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect fill=%22%23ddd%22 width=%22150%22 height=%22150%22/></svg>'">
                     <div class="search-result-body">
                         <div class="search-result-score">Score: ${(result.relevance_score * 100).toFixed(0)}%</div>
@@ -879,6 +879,7 @@ window.performSearch = performSearch;
 window.searchExample = searchExample;
 window.closeModal = closeModal;
 window.showImageModal = showImageModal;
+window.uploadAll = uploadAll;
 
 // Load warehouse on page load
 window.addEventListener('load', () => {
