@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/yourcompany/image-warehousing/internal/models"
@@ -41,7 +40,6 @@ func (s *AIService) Analyze2DImage(ctx context.Context, imagePath string) (*mode
 	analysis := &models.AIAnalysis{
 		Type:            resp.Type,
 		PrimaryCategory: resp.PrimaryCategory,
-		SubCategory:     resp.SubCategory,
 		Description:     resp.Description,
 		Objects:         resp.Objects,
 		Colors:          resp.Colors,
@@ -69,7 +67,6 @@ func (s *AIService) Analyze3DObject(ctx context.Context, viewPaths map[string]st
 	analysis := &models.AIAnalysis{
 		Type:                  resp.Type,
 		PrimaryCategory:       resp.PrimaryCategory,
-		SubCategory:           resp.SubCategory,
 		Description:           resp.Description,
 		Objects:               resp.Objects,
 		Colors:                resp.Colors,
@@ -149,14 +146,9 @@ func (s *AIService) parseFeatures(features []string) []models.Feature {
 }
 
 // GetCategoryPath constructs the category path from analysis
+// Now returns only primary category for flat structure
 func (s *AIService) GetCategoryPath(analysis *models.AIAnalysis) string {
-	primary := s.normalizeCategoryName(analysis.PrimaryCategory)
-	sub := s.normalizeCategoryName(analysis.SubCategory)
-
-	if sub != "" {
-		return filepath.Join(primary, sub)
-	}
-	return primary
+	return s.normalizeCategoryName(analysis.PrimaryCategory)
 }
 
 // normalizeCategoryName converts category names to filesystem-safe paths

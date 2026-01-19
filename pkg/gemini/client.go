@@ -22,7 +22,6 @@ type Client struct {
 type Analysis2DResponse struct {
 	Type            string   `json:"type"`
 	PrimaryCategory string   `json:"primary_category"`
-	SubCategory     string   `json:"sub_category"`
 	Description     string   `json:"description"`
 	Objects         []string `json:"objects"`
 	Colors          []string `json:"colors"`
@@ -36,7 +35,6 @@ type Analysis2DResponse struct {
 type Analysis3DResponse struct {
 	Type                  string   `json:"type"`
 	PrimaryCategory       string   `json:"primary_category"`
-	SubCategory           string   `json:"sub_category"`
 	Description           string   `json:"description"`
 	Objects               []string `json:"objects"`
 	Colors                []string `json:"colors"`
@@ -127,7 +125,6 @@ Return as JSON with this structure:
 {
   "type": "2D",
   "primary_category": "artwork|conceptual-art|surrealism|figurines|character-design|sculpture|performance-art|animals|landscapes|portraits|3d-renders|abstract|architecture|products|uncategorized",
-  "sub_category": "specific subcategory (e.g., masked-figures, anthropomorphic, ceramics, cats, mountains, headshot)",
   "description": "2-3 sentence detailed description",
   "objects": ["object1", "object2"],
   "colors": ["color1", "color2"],
@@ -214,7 +211,6 @@ Return as JSON with this structure:`, len(views), viewsJoined, len(views), views
 {
   "type": "3D",
   "primary_category": "sculpture|figurines|character-design|3d-renders|products|characters|environments|architecture|vehicles|artwork|uncategorized",
-  "sub_category": "specific subcategory (e.g., anthropomorphic, ceramics, furniture, weapons)",
   "description": "2-3 sentence detailed description of the 3D object",
   "objects": ["primary objects identified"],
   "colors": ["dominant colors across all views"],

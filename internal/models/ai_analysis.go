@@ -4,7 +4,6 @@ package models
 type AIAnalysis struct {
 	Type                   string              `json:"type"` // 2D or 3D
 	PrimaryCategory        string              `json:"primary_category"`
-	SubCategory            string              `json:"sub_category"`
 	Description            string              `json:"description"`
 	Objects                []string            `json:"objects"`
 	Colors                 []string            `json:"colors"`

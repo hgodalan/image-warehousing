@@ -121,7 +121,6 @@ func (s *IndexService) writeAIAnalysis(sb *strings.Builder, ai *models.AIAnalysi
 	sb.WriteString("\n**AI Analysis:**\n")
 	sb.WriteString(fmt.Sprintf("- **Description:** %s\n", ai.Description))
 	sb.WriteString(fmt.Sprintf("- **Primary Category:** %s\n", ai.PrimaryCategory))
-	sb.WriteString(fmt.Sprintf("- **Sub-category:** %s\n", ai.SubCategory))
 
 	if len(ai.Objects) > 0 {
 		sb.WriteString(fmt.Sprintf("- **Objects Detected:** %s\n", strings.Join(ai.Objects, ", ")))
