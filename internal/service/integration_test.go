@@ -40,12 +40,11 @@ func TestIndexingWorkflow(t *testing.T) {
 			FileSize:      2048000,
 			Width:         1920,
 			Height:        1080,
-			Category:      "landscapes/ocean",
+			Category:      "landscapes",
 			ManualTags:    []string{"beach", "sunset", "ocean", "nature"},
 			AIAnalysis: &models.AIAnalysis{
 				Description:     "A beautiful sunset over a calm ocean beach with golden sand",
 				PrimaryCategory: "landscapes",
-				SubCategory:     "ocean",
 				Objects:         []string{"beach", "ocean", "sunset", "sky", "sand"},
 				Colors:          []string{"orange", "blue", "gold", "purple"},
 				SceneType:       "outdoor",
@@ -66,12 +65,11 @@ func TestIndexingWorkflow(t *testing.T) {
 			FileSize:      3072000,
 			Width:         2560,
 			Height:        1440,
-			Category:      "landscapes/mountains",
+			Category:      "landscapes",
 			ManualTags:    []string{"mountain", "peak", "snow", "hiking"},
 			AIAnalysis: &models.AIAnalysis{
 				Description:     "A majestic snow-capped mountain peak against a clear blue sky",
 				PrimaryCategory: "landscapes",
-				SubCategory:     "mountains",
 				Objects:         []string{"mountain", "snow", "sky", "rocks"},
 				Colors:          []string{"white", "blue", "grey"},
 				SceneType:       "outdoor",
@@ -92,12 +90,11 @@ func TestIndexingWorkflow(t *testing.T) {
 			FileSize:      1536000,
 			Width:         1280,
 			Height:        720,
-			Category:      "urban/night",
+			Category:      "urban",
 			ManualTags:    []string{"city", "night", "lights", "street"},
 			AIAnalysis: &models.AIAnalysis{
 				Description:     "A bustling city street illuminated by neon lights and street lamps",
 				PrimaryCategory: "urban",
-				SubCategory:     "night",
 				Objects:         []string{"buildings", "cars", "lights", "street"},
 				Colors:          []string{"blue", "red", "yellow", "black"},
 				SceneType:       "outdoor",
@@ -189,12 +186,11 @@ func TestSearchServiceIntegration(t *testing.T) {
 		FileSize:      1024000,
 		Width:         1600,
 		Height:        900,
-		Category:      "nature/forest",
+		Category:      "nature",
 		ManualTags:    []string{"forest", "dark", "trees", "mysterious"},
 		AIAnalysis: &models.AIAnalysis{
 			Description:     "A dark, mysterious forest with tall trees",
 			PrimaryCategory: "nature",
-			SubCategory:     "forest",
 			Objects:         []string{"trees", "forest", "shadows"},
 			Colors:          []string{"dark green", "brown", "black"},
 			SceneType:       "outdoor",
@@ -323,7 +319,6 @@ func BenchmarkAppendToIndex(b *testing.B) {
 		AIAnalysis: &models.AIAnalysis{
 			Description:     "Test description",
 			PrimaryCategory: "test",
-			SubCategory:     "benchmark",
 		},
 	}
 

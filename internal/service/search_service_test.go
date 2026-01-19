@@ -73,7 +73,7 @@ func TestSearch_Success(t *testing.T) {
 			Artist:     "Artist 1",
 			Type:       models.ImageType2D,
 			UploadedAt: now,
-			Category:   "animals/cats",
+			Category:   "animals",
 			FilePath:   "test1.jpg",
 			FileSize:   1024,
 			Width:      800,
@@ -81,7 +81,6 @@ func TestSearch_Success(t *testing.T) {
 			AIAnalysis: &models.AIAnalysis{
 				Description:     "A cute cat",
 				PrimaryCategory: "animals",
-				SubCategory:     "cats",
 			},
 		},
 		{
@@ -90,7 +89,7 @@ func TestSearch_Success(t *testing.T) {
 			Artist:     "Artist 2",
 			Type:       models.ImageType2D,
 			UploadedAt: now,
-			Category:   "animals/dogs",
+			Category:   "animals",
 			FilePath:   "test2.jpg",
 			FileSize:   2048,
 			Width:      1024,
@@ -98,7 +97,6 @@ func TestSearch_Success(t *testing.T) {
 			AIAnalysis: &models.AIAnalysis{
 				Description:     "A happy dog",
 				PrimaryCategory: "animals",
-				SubCategory:     "dogs",
 			},
 		},
 	}

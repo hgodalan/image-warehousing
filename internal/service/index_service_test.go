@@ -108,12 +108,11 @@ func TestAppendToIndex_2DImage(t *testing.T) {
 		FileSize:      1024000,
 		Width:         1920,
 		Height:        1080,
-		Category:      "test/category",
+		Category:      "test",
 		ManualTags:    []string{"tag1", "tag2"},
 		AIAnalysis: &models.AIAnalysis{
 			Description:     "A test image",
 			PrimaryCategory: "test",
-			SubCategory:     "category",
 			Objects:         []string{"object1", "object2"},
 			Colors:          []string{"red", "blue"},
 			SceneType:       "indoor",
@@ -140,7 +139,7 @@ func TestAppendToIndex_2DImage(t *testing.T) {
 		"**Title:** Test Image",
 		"**Artist:** Test Artist",
 		"**Type:** 2D",
-		"**Category:** test/category",
+		"**Category:** test",
 		"**File Path:** categories/test/image.jpg",
 		"**Thumbnail:** categories/test/image_thumb.jpg",
 		"**Dimensions:** 1920x1080",
@@ -193,12 +192,11 @@ func TestAppendToIndex_3DObject(t *testing.T) {
 			"bottom": "categories/3d/test-3d-123/bottom.jpg",
 		},
 		TotalFileSize: 6144000,
-		Category:      "3d/objects",
+		Category:      "3d-renders",
 		ManualTags:    []string{"3d", "model"},
 		AIAnalysis: &models.AIAnalysis{
 			Description:            "A 3D test object",
-			PrimaryCategory:        "3d",
-			SubCategory:            "objects",
+			PrimaryCategory:        "3d-renders",
 			ThreeDCharacteristics:  "cube-like shape",
 		},
 	}
@@ -223,7 +221,7 @@ func TestAppendToIndex_3DObject(t *testing.T) {
 		"**Views:**",
 		"front: categories/3d/test-3d-123/front.jpg",
 		"**Total File Size:**",
-		"(6 images)",
+		"(6 views)",
 		"**3D Characteristics:** cube-like shape",
 	}
 
